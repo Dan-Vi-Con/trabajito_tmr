@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulación del control de calidad del agua en piscicultura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;--bg:#e6eff0;--panel:#fbfefe;--ink:#0d2f3a;--mute:#587783;--line:#d0e0e3;--water:#1f8ea6;--water2:#8fd3de;--water3:#2a9db5;--ok:#1b7f50;--warn:#b26f00;--bad:#c0392b;--band:rgba(27,127,80,.16);--line1:#0f5c6e;--fish:#f2994a;--hero1:#082f3c;--hero2:#14788c;--shadow:0 1px 2px rgba(8,47,60,.06),0 8px 24px -12px rgba(8,47,60,.25)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#081418;--panel:#102229;--ink:#e4f1f3;--mute:#8aa8b0;--line:#21404a;--water2:#1f6a7a;--water3:#1b7f94;--ok:#4cc38a;--warn:#e5a93f;--bad:#ff7b72;--band:rgba(76,195,138,.16);--line1:#7fd0e0;--hero1:#04161c;--hero2:#0e5566;--shadow:0 8px 24px -12px rgba(0,0,0,.6)}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Instrument Sans","Segoe UI",system-ui,sans-serif}
+header{background:linear-gradient(135deg,var(--hero1),var(--hero2));color:#eaf7f9;padding:calc(env(safe-area-inset-top,0px) + 28px) 16px 54px;position:relative}
+header>div{max-width:1100px;margin:0 auto}
+h1{font:600 clamp(24px,4vw,36px)/1.15 Fraunces,Georgia,serif;margin:0 0 8px;letter-spacing:-.01em;max-width:22ch}
+p.sub{margin:0;color:#b9dde4;max-width:62ch}
+header svg{position:absolute;left:0;right:0;bottom:-1px;width:100%;height:30px;display:block}
+main{max-width:1100px;margin:-22px auto 0;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 40px);position:relative}
+.grid{display:grid;gap:16px}
+.top{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.charts{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:16px}
+.bottom{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:16px}
+@media(max-width:760px){.top{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+h2{font:600 17px/1.3 Fraunces,Georgia,serif;margin:0 0 12px}
+h2 small{font:400 13px "Instrument Sans",sans-serif;color:var(--mute)}
+svg.tank{width:100%;height:auto;display:block;border-radius:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:3px 12px;font-size:13px;color:var(--mute)}
+.chip:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line)}
+.chip.on{border-color:var(--water);color:var(--ink);background:color-mix(in srgb,var(--water) 14%,transparent)}
+.chip.on:before{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.read{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.r{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-left:4px solid var(--ok)}
+.r.warn{border-left-color:var(--warn)}.r.bad{border-left-color:var(--bad)}
+.r b{display:inline;font:600 26px/1.2 Fraunces,Georgia,serif;font-variant-numeric:tabular-nums}
+.r span{font-size:13px;color:var(--mute)}.r span.lb{display:block}
+.r.ok b{color:var(--ok)}.r.warn b{color:var(--warn)}.r.bad b{color:var(--bad)}
+.trk{position:relative;height:6px;border-radius:3px;background:var(--line);margin-top:8px}
+.trk .bd{position:absolute;top:0;bottom:0;background:var(--band);border:1px solid var(--ok);border-radius:3px;box-sizing:border-box}
+.trk .mk{position:absolute;top:-3px;width:4px;height:12px;border-radius:2px;background:var(--ink);transform:translateX(-2px)}
+#alarm{margin-top:12px;padding:9px 12px;border-radius:10px;font-size:14px;border:1px solid var(--line);color:var(--mute)}
+#alarm.bad{border-color:var(--bad);color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent)}
+canvas{width:100%;height:180px;display:block}
+.ctl{display:grid;gap:10px;align-content:start}
+label{display:flex;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+label.sl{display:grid;grid-template-columns:1fr auto;gap:2px 8px}
+label.sl input{grid-column:1/3}
+input[type=range]{accent-color:var(--water)}input[type=checkbox]{accent-color:var(--water);width:16px;height:16px}
+select,button{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button{background:var(--water);border-color:var(--water);color:#fff;font-weight:600}
+#rs{background:transparent;color:var(--ink);border-color:var(--line)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#log{font-size:13px;color:var(--mute);margin:0;padding:0;list-style:none;max-height:180px;overflow:auto}
+#log li{padding:4px 0;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left}th{color:var(--mute);font-weight:500}td:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+.bub{animation:rise 2.2s linear infinite}
+@keyframes rise{from{transform:translateY(0);opacity:.9}to{transform:translateY(-120px);opacity:0}}
+@media(prefers-reduced-motion:reduce){.bub{animation:none}}
+</style>
+</head>
+<body>
+<header><div><h1>Control automático de la calidad del agua en piscicultura</h1>
+<p class="sub">Tanque con recirculación parcial en La Paz. El controlador mide, compara con los puntos de consigna y acciona aireador, calentador, recambio, dosificador de pH y válvula de nivel. Active perturbaciones y compare con el sistema sin control.</p></div>
+<svg viewBox="0 0 1200 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 C150 30 300 0 450 14 S750 30 900 14 S1100 2 1200 14 V30 H0Z" fill="var(--bg)"/></svg></header>
+<main>
+
+<div class="grid top">
+ <section class="card">
+  <h2>Tanque y actuadores <small id="clock"></small></h2>
+  <svg class="tank" viewBox="0 0 360 230" role="img" aria-label="Esquema del tanque con peces y aireador">
+   <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--water3)" stop-opacity=".55"/><stop offset="1" stop-color="var(--water)" stop-opacity=".95"/></linearGradient>
+   <linearGradient id="gl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".12" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+   <rect x="0" y="0" width="360" height="230" fill="var(--bg)" opacity=".5"/>
+   <rect id="water" x="22" y="60" width="316" height="148" fill="url(#wg)"/>
+   <rect x="22" y="196" width="316" height="12" fill="#c9b27c" opacity=".55"/>
+   <line x1="22" x2="338" id="surf" y1="60" y2="60" stroke="#e8fbff" stroke-width="2.5"/>
+   <g id="bubbles"></g>
+   <g id="fish" fill="var(--fish)"></g>
+   <rect x="170" y="194" width="20" height="8" rx="2" fill="var(--ink)" opacity=".65"/>
+   <rect x="20" y="20" width="320" height="190" rx="8" fill="none" stroke="var(--ink)" stroke-opacity=".75" stroke-width="2.5"/>
+   <rect x="22" y="22" width="316" height="186" rx="7" fill="url(#gl)"/>
+   <text x="30" y="40" font-size="12" fill="var(--mute)" id="lvl"></text>
+  </svg>
+  <div class="chips" id="acts"></div>
+  <div id="alarm">Sin alarmas</div>
+ </section>
+ <section class="card">
+  <h2>Sensores</h2>
+  <div class="read" id="reads"></div>
+ </section>
+</div>
+
+<div class="grid charts" id="charts"></div>
+
+<div class="grid bottom">
+ <section class="card ctl">
+  <h2>Condiciones y perturbaciones</h2>
+  <div class="row">
+   <label>Especie <select id="sp"><option value="trucha">Trucha arcoíris</option><option value="tilapia">Tilapia</option></select></label>
+   <label>Velocidad <select id="spd"><option value="60">1 h por segundo</option><option value="240" selected>4 h por segundo</option><option value="720">12 h por segundo</option></select></label>
+  </div>
+  <label class="sl">Biomasa <span id="vB"></span><input id="B" type="range" min="4" max="40" value="15"></label>
+  <label class="sl">Altitud (m) <span id="vA"></span><input id="alt" type="range" min="0" max="4000" step="100" value="3600"></label>
+  <label><input type="checkbox" id="auto" checked> Control automático activo</label>
+  <label><input type="checkbox" id="cold"> Ola de frío (−8 °C ambiente)</label>
+  <label><input type="checkbox" id="feed"> Sobrealimentación (×3)</label>
+  <label><input type="checkbox" id="fail"> Falla del sensor de oxígeno</label>
+  <label><input type="checkbox" id="out"> Corte de energía</label>
+  <label><input type="checkbox" id="bk" checked> Respaldo de aireación</label>
+  <div class="row"><button id="pp">Pausar</button><button id="rs">Reiniciar</button></div>
+ </section>
+ <section class="card">
+  <h2>Tiempo dentro del rango óptimo</h2>
+  <table id="kpi"></table>
+  <h2 style="margin-top:12px">Registro de eventos</h2>
+  <ul id="log"></ul>
+ </section>
+</div>
+</main>
+<script>
+const SP={trucha:{Tmin:10,Tmax:16,OD:6.5,ODc:5,T0:12,Tin:9,Tamb:12,NH3:0.02,r0:0.0035,Tref:12},
+tilapia:{Tmin:26,Tmax:30,OD:5,ODc:3,T0:27,Tin:20,Tamb:20,NH3:0.06,r0:0.002,Tref:27}};
+const $=id=>document.getElementById(id);
+let P,s,hist,cnt,logs,alarmsPrev,paused=false,acc=0,last=0;
+const rnd=()=>(Math.random()+Math.random()+Math.random()-1.5)/1.5;
+function init(){P=SP[$('sp').value];
+ s={t:0,C:P.OD+.8,T:P.T0,TAN:.3,pH:7.6,L:100,aer:0,heat:0,ex:0,vlv:0,dose:0,lastDose:-99,frozen:null};
+ hist=[];cnt={n:0,od:0,t:0,nh:0,ph:0};logs=[];alarmsPrev=new Set();$('log').innerHTML='';}
+const frac=(pH,T)=>1/(1+Math.pow(10,0.09018+2729.92/(T+273.15)-pH));
+const fmt=t=>'Día '+(1+Math.floor(t/1440))+' '+String(Math.floor(t/60)%24).padStart(2,'0')+':'+String(Math.floor(t%60)).padStart(2,'0');
+function note(m){const li=document.createElement('li');li.textContent=fmt(s.t)+' — '+m;$('log').prepend(li);while($('log').children.length>40)$('log').lastChild.remove();}
+function step(){
+ const B=+$('B').value,hour=(s.t/60)%24,auto=$('auto').checked,out=$('out').checked,fail=$('fail').checked;
+ const tamb=P.Tamb-($('cold').checked?8:0)+5*Math.sin(2*Math.PI*(hour-9)/24);
+ const feeding=((hour>=8&&hour<8.5)||(hour>=14&&hour<14.5))?($('feed').checked?3:1):0;
+ const nh3=s.TAN*frac(s.pH,s.T);
+ if(fail&&s.frozen===null)s.frozen=s.C; if(!fail)s.frozen=null;
+ const rC=fail?s.frozen:s.C+.05*rnd(),rT=s.T+.03*rnd(),rpH=s.pH+.01*rnd(),rN=nh3*(1+.05*rnd());
+ let c={aer:0,heat:0,ex:0,vlv:0,dose:0};
+ if(auto){
+  if(fail){c.aer=1;} else if(rC<P.OD)c.aer=1; else if(rC>P.OD+1)c.aer=0; else c.aer=s.aer;
+  c.heat=rT<P.Tmin?1:rT>P.Tmin+1?0:s.heat;
+  const hot=rT>P.Tmax&&P.Tin<rT,hi=rN>P.NH3;
+  c.ex=(hot||hi)?1:(rT<P.Tmax-1&&rN<.7*P.NH3)?0:s.ex;
+  if(rpH<6.9&&s.t-s.lastDose>20){c.dose=1;s.lastDose=s.t;}
+  c.vlv=s.L<97?1:s.L>=100?0:s.vlv;
+ }
+ if(fail&&!s.failNoted){note('Sensor de oxígeno en falla: aireación forzada (modo seguro)');s.failNoted=1}if(!fail)s.failNoted=0;
+ const aerOn=c.aer&&(!out||$('bk').checked),kla=.008+(aerOn?(out?.07:.12):0);
+ const heat=c.heat&&!out,ex=c.ex&&!out,vlv=c.vlv&&!out,dose=c.dose&&!out;
+ const alt=+$('alt').value,Cs=(14.6-.39*s.T+.0072*s.T*s.T)*Math.exp(-alt/8500),f=ex?.02:0;
+ const R=P.r0*B*Math.pow(1.06,s.T-P.Tref)*(1+(feeding?.6:0));
+ const kn=.006*s.C/(s.C+2)*(s.pH>6.5?1:.5);
+ s.C=Math.max(0,s.C+kla*(Cs-s.C)-R-f*(s.C-Cs*.95));
+ s.T+=.0006*(tamb-s.T)+(heat?.035:0)+f*(P.Tin-s.T);
+ s.TAN=Math.max(0,s.TAN+(.0002+.001*feeding)*B-kn*s.TAN-f*s.TAN);
+ s.pH+=-.12*kn*s.TAN+f*(7.6-s.pH)+(dose?.12:0);
+ s.L+=-.0003*(1+(s.T-12)/20)+(vlv?.15:0);
+ if(dose)note('Dosificación de regulador de pH');
+ Object.assign(s,{aer:c.aer,heat:c.heat,ex:c.ex,vlv:c.vlv,dose:dose?1:0,aerOn,heatOn:heat,exOn:ex,vlvOn:vlv,nh3:s.TAN*frac(s.pH,s.T),Cs,out,rC,rT,rpH,rN});
+ cnt.n++;cnt.od+=s.C>=P.ODc?1:0;cnt.t+=(s.T>=P.Tmin-1&&s.T<=P.Tmax+1)?1:0;cnt.nh+=s.nh3<=P.NH3?1:0;cnt.ph+=(s.pH>=6.5&&s.pH<=8.5)?1:0;
+ s.t++;
+ if(s.t%10===0){hist.push({C:s.C,T:s.T,N:s.nh3,pH:s.pH});if(hist.length>144)hist.shift();}
+ const al=new Set();
+ if(s.C<P.ODc)al.add('Oxígeno bajo');if(s.nh3>2*P.NH3)al.add('Amoníaco no ionizado alto');if(s.T<P.Tmin-3||s.T>P.Tmax+3)al.add('Temperatura fuera de rango');
+ if(s.pH<6.3||s.pH>8.8)al.add('pH fuera de rango');if(s.L<94)al.add('Nivel bajo');if(out)al.add('Corte de energía');if(fail)al.add('Falla de sensor de oxígeno');
+ al.forEach(a=>{if(!alarmsPrev.has(a))note('ALARMA: '+a)});alarmsPrev=al;s.al=[...al];
+}
+const reads=[['C','Oxígeno disuelto','mg/L',v=>v.toFixed(2),()=>s.C>=P.OD?0:s.C>=P.ODc?1:2],
+['T','Temperatura','°C',v=>v.toFixed(1),()=>(s.T>=P.Tmin&&s.T<=P.Tmax)?0:(Math.abs(s.T-(P.Tmin+P.Tmax)/2)<=(P.Tmax-P.Tmin)/2+2)?1:2],
+['nh3','Amoníaco no ionizado','mg/L',v=>v.toFixed(3),()=>s.nh3<=P.NH3?0:s.nh3<=2*P.NH3?1:2],
+['pH','pH','',v=>v.toFixed(2),()=>(s.pH>=6.5&&s.pH<=8.5)?0:1],
+['TAN','Amoníaco total (TAN)','mg/L',v=>v.toFixed(2),()=>0],
+['L','Nivel de agua','cm',v=>v.toFixed(1),()=>s.L>=96?0:s.L>=94?1:2]];
+const rng=[[0,12,()=>[P.OD,12]],[0,35,()=>[P.Tmin,P.Tmax]],[0,.1,()=>[0,P.NH3]],[6,9,()=>[6.5,8.5]],[0,4,()=>[0,1]],[90,102,()=>[96,102]]];
+$('reads').innerHTML=reads.map((r,i)=>`<div class="r" id="r${i}"><span class="lb">${r[1]}</span><b></b> <span>${r[2]}</span><div class="trk"><i class="bd"></i><i class="mk"></i></div></div>`).join('');
+const cl=['ok','warn','bad'];
+const chartDefs=[['C','Oxígeno disuelto (mg/L)',0,12,()=>[P.OD,12]],['T','Temperatura (°C)',0,35,()=>[P.Tmin,P.Tmax]],['N','Amoníaco no ionizado (mg/L)',0,.1,()=>[0,P.NH3]],['pH','pH',6,9,()=>[6.5,8.5]]];
+$('charts').innerHTML=chartDefs.map((d,i)=>`<section class="card"><h2>${d[1]} <small>· últimas 24 h</small></h2><canvas id="cv${i}" role="img" aria-label="Gráfica de ${d[1]}"></canvas></section>`).join('');
+function draw(){
+ const css=getComputedStyle(document.documentElement);
+ chartDefs.forEach((d,i)=>{const cv=$('cv'+i),dpr=devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  if(cv.width!==w*dpr){cv.width=w*dpr;cv.height=h*dpr;}
+  const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const y=v=>h-14-(Math.min(Math.max(v,d[2]),d[3])-d[2])/(d[3]-d[2])*(h-22);
+  const [lo,hi]=d[4]();g.fillStyle=css.getPropertyValue('--band');g.fillRect(28,y(hi),w-32,y(lo)-y(hi));
+  g.strokeStyle=css.getPropertyValue('--line');g.fillStyle=css.getPropertyValue('--mute');g.font='11px sans-serif';g.lineWidth=1;
+  for(let k=0;k<=4;k++){const v=d[2]+(d[3]-d[2])*k/4,yy=y(v);g.beginPath();g.moveTo(28,yy);g.lineTo(w-4,yy);g.stroke();g.fillText(+v.toFixed(3),0,yy+4);}
+  g.strokeStyle=css.getPropertyValue('--line1');g.lineWidth=2;g.beginPath();
+  hist.forEach((p,j)=>{const x=28+j/143*(w-32);j?g.lineTo(x,y(p[d[0]])):g.moveTo(x,y(p[d[0]]));});g.stroke();});
+}
+const fishEl=$('fish');for(let i=0;i<8;i++){fishEl.insertAdjacentHTML('beforeend','<path d="M0 0 q8-6 16 0 q-8 6-16 0 M16 0 l7-5 v10z"/>');}
+function render(ts){
+ reads.forEach((r,i)=>{const el=$('r'+i);el.className='r '+cl[r[4]()];el.querySelector('b').textContent=r[3](s[r[0]]);const [a,b]=rng[i],[lo,hi]=rng[i][2](),q=v=>(Math.min(Math.max(v,a),b)-a)/(b-a)*100,bd=el.querySelector('.bd');bd.style.left=q(lo)+'%';bd.style.width=(q(hi)-q(lo))+'%';el.querySelector('.mk').style.left=q(s[r[0]])+'%';});
+ const top=60-(s.L-100)*4;$('water').setAttribute('y',top);$('water').setAttribute('height',208-top);$('surf').setAttribute('y1',top);$('surf').setAttribute('y2',top);$('lvl').textContent='';
+ [...fishEl.children].forEach((f,i)=>{const x=40+((ts/40*(1+i%3*.3)+i*57)%270),yy=Math.max(top+14,70)+((i*37)%110)+6*Math.sin(ts/500+i);f.setAttribute('transform',`translate(${x},${yy})`);});
+ $('bubbles').innerHTML=s.aerOn?[0,1,2,3,4].map(i=>`<circle class="bub" style="animation-delay:${i*.4}s" cx="${172+(i%2?5:-3)+i*2}" cy="190" r="${2+i%3}" fill="none" stroke="var(--ink)" stroke-opacity=".6"/>`).join(''):'';
+ const A=[['Aireador',s.aerOn],['Calentador',s.heatOn],['Recambio de agua',s.exOn],['Válvula de nivel',s.vlvOn],['Dosificador pH',s.dose]];
+ $('acts').innerHTML=A.map(a=>`<span class="chip ${a[1]?'on':''}">${a[0]}: ${a[1]?'encendido':'apagado'}</span>`).join('');
+ const al=$('alarm');al.className=s.al.length?'bad':'';al.textContent=s.al.length?'Alarmas: '+s.al.join(' · '):'Sin alarmas';
+ $('clock').textContent='· '+fmt(s.t);$('vB').textContent=$('B').value+' kg/m³';$('vA').textContent=$('alt').value;
+ const p=k=>cnt.n?(100*cnt[k]/cnt.n).toFixed(1)+' %':'—';
+ $('kpi').innerHTML=`<tr><th>Variable</th><th>Tiempo en rango</th></tr><tr><td>Oxígeno (sobre el mínimo crítico)</td><td>${p('od')}</td></tr><tr><td>Temperatura (±1 °C del rango)</td><td>${p('t')}</td></tr><tr><td>Amoníaco no ionizado</td><td>${p('nh')}</td></tr><tr><td>pH (6,5 a 8,5)</td><td>${p('ph')}</td></tr>`;
+ draw();
+}
+function loop(ts){
+ if(!paused){acc+=(ts-last)/1000*(+$('spd').value);let n=Math.min(Math.floor(acc),400);acc-=Math.floor(acc);while(n-->0)step();}
+ last=ts;render(ts);requestAnimationFrame(loop);
+}
+$('pp').onclick=()=>{paused=!paused;$('pp').textContent=paused?'Continuar':'Pausar'};
+$('rs').onclick=()=>{init();step();acc=0};$('sp').onchange=()=>{init();step()};
+['auto','cold','feed','fail','out'].forEach(id=>$(id).onchange=e=>note(e.target.parentElement.textContent.trim()+': '+(e.target.checked?'sí':'no')));
+init();step();requestAnimationFrame(t=>{last=t;loop(t)});
+</script>
+</body>
+</html>
